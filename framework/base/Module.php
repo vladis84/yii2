@@ -292,6 +292,11 @@ class Module extends ServiceLocator
         return $this->_layoutPath;
     }
 
+    public function findLayout($param)
+    {
+
+    }
+
     /**
      * Sets the directory that contains the layout files.
      * @param string $path the root directory or path alias of layout files.

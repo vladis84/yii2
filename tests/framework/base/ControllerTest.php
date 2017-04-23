@@ -3,7 +3,7 @@
 namespace yiiunit\framework\base;
 
 use Yii;
-use yii\base\Controller;
+use yiiunit\framework\base\stubs\TestController;
 use yiiunit\TestCase;
 
 /**
@@ -11,20 +11,31 @@ use yiiunit\TestCase;
  */
 class ControllerTest extends TestCase
 {
-    public static $actionRuns = [];
+    protected function setUp()
+    {
+        $config = [
+            'layout'     => 'main',
+            'layoutPath' => '@app/framework/base/fixtures',
+            'viewPath'   => '@app/framework/base/fixtures',
+        ];
+        $this->mockApplication($config);
+    }
 
+    protected function tearDown()
+    {
+        parent::tearDown();
+        TestController::$actionRuns = [];
+    }
     public function testRunAction()
     {
         $this->mockApplication();
-
-        static::$actionRuns = [];
         $controller = new TestController('test-controller', Yii::$app);
         $this->assertNull($controller->action);
         $result = $controller->runAction('test1');
         $this->assertEquals('test1', $result);
         $this->assertEquals([
             'test-controller/test1',
-        ], static::$actionRuns);
+        ], TestController::$actionRuns);
         $this->assertNotNull($controller->action);
         $this->assertEquals('test1', $controller->action->id);
         $this->assertEquals('test-controller/test1', $controller->action->uniqueId);
@@ -34,24 +45,86 @@ class ControllerTest extends TestCase
         $this->assertEquals([
             'test-controller/test1',
             'test-controller/test2',
-        ], static::$actionRuns);
+        ], TestController::$actionRuns);
         $this->assertNotNull($controller->action);
         $this->assertEquals('test1', $controller->action->id);
         $this->assertEquals('test-controller/test1', $controller->action->uniqueId);
     }
-}
 
-
-class TestController extends Controller
-{
-    public function actionTest1()
+    public function testFindLayoutFileFindDefaulLayout()
     {
-        ControllerTest::$actionRuns[] = $this->action->uniqueId;
-        return 'test1';
+        $controller = new TestController('test-controller', Yii::$app);
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.php';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
     }
-    public function actionTest2()
+
+    public function testFindLayoutFindLayoutInSubModules()
     {
-        ControllerTest::$actionRuns[] = $this->action->uniqueId;
-        return 'test2';
+        $module = Yii::$app;
+        $module->layout = null;
+        $subModule = clone $module;
+        $subModule->layout = 'main';
+        $module->module = $subModule;
+        $controller = new TestController('test-controller', $module);
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.php';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testFindLayoutFileAliasPathLayout()
+    {
+        $controller = new TestController('test-controller', Yii::$app);
+        $controller->layout = '@app/framework/base/fixtures/main';
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.php';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testFindLayoutFileAbsolutePathLayout()
+    {
+        $controller = new TestController('test-controller', Yii::$app);
+        $controller->layout = '/main';
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.php';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testFindLayoutViewExtensionPHP5AndFileNotExists()
+    {
+        Yii::$app->view->defaultExtension = 'php5';
+        $controller = new TestController('test-controller', Yii::$app);
+        $controller->layout = 'main';
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.php';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testFindLayoutViewExtensionTPLAndFileExists()
+    {
+        Yii::$app->view->defaultExtension = 'tpl';
+        $controller = new TestController('test-controller', Yii::$app);
+        $controller->layout = 'main';
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.tpl';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
     }
 }

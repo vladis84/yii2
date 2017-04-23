@@ -481,38 +481,61 @@ class Controller extends Component implements ViewContextInterface
      */
     public function findLayoutFile($view)
     {
-        $module = $this->module;
-        if (is_string($this->layout)) {
-            $layout = $this->layout;
-        } elseif ($this->layout === null) {
-            while ($module !== null && $module->layout === null) {
-                $module = $module->module;
-            }
-            if ($module !== null && is_string($module->layout)) {
-                $layout = $module->layout;
-            }
+        $layout = $this->layout;
+        $module = $this->module ?:  Yii::$app;
+
+        if (!is_string($layout)) {
+            list($module, $layout) = $this->findLayotInModule($module);
         }
 
-        if (!isset($layout)) {
+        if ($layout === null) {
             return false;
         }
-
-        if (strncmp($layout, '@', 1) === 0) {
-            $file = Yii::getAlias($layout);
-        } elseif (strncmp($layout, '/', 1) === 0) {
-            $file = Yii::$app->getLayoutPath() . DIRECTORY_SEPARATOR . substr($layout, 1);
-        } else {
-            $file = $module->getLayoutPath() . DIRECTORY_SEPARATOR . $layout;
-        }
+      
+        $file = $this->calculateLayotFile($module, $layout);
 
         if (pathinfo($file, PATHINFO_EXTENSION) !== '') {
             return $file;
         }
+        
         $path = $file . '.' . $view->defaultExtension;
         if ($view->defaultExtension !== 'php' && !is_file($path)) {
             $path = $file . '.php';
         }
 
         return $path;
+    }
+
+    /**
+     * Finds the modules layout.
+     * @return array
+     */
+    private function findLayotInModule(Module $module)
+    {
+        $layout = $module->layout;
+
+        while ($module !== null && $layout === null) {
+            $module = $module->module;
+            $layout = $module->layout;
+        }
+
+        return [$module, $layout];
+    }
+
+    /**
+     * @param \yii\base\Module $module
+     * @param string $layout
+     */
+    private function calculateLayotFile(Module $module, $layout)
+    {
+        $layout = ltrim($layout, '/');
+
+        if (strncmp($layout, '@', 1) === 0) {
+            $file = Yii::getAlias($layout);
+        } else {
+            $file = $module->getLayoutPath() . DIRECTORY_SEPARATOR . $layout;
+        }
+
+        return $file;
     }
 }
