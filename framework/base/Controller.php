@@ -481,14 +481,16 @@ class Controller extends Component implements ViewContextInterface
      */
     public function findLayoutFile($view)
     {
-        $layout = $this->layout;
         $module = $this->module ?:  Yii::$app;
+        $layout = null;
 
-        if (!is_string($layout)) {
-            list($module, $layout) = $this->findLayotInModule($module);
+        if (is_string($this->layout)) {
+            $layout = $this->layout;
+        } elseif ($this->layout === null) {
+            list($module, $layout) = $this->findLayoutInModule($module);
         }
 
-        if ($layout === null) {
+        if (!is_string($layout)) {
             return false;
         }
       
@@ -510,11 +512,11 @@ class Controller extends Component implements ViewContextInterface
      * Finds the modules layout.
      * @return array
      */
-    private function findLayotInModule(Module $module)
+    private function findLayoutInModule(Module $module)
     {
         $layout = $module->layout;
 
-        while ($module !== null && $layout === null) {
+        while ($module !== null && !is_string($layout)) {
             $module = $module->module;
             $layout = $module->layout;
         }

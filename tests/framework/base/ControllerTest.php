@@ -102,6 +102,18 @@ class ControllerTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
+    public function testFindLayoutFileWithExtension()
+    {
+        $controller = new TestController('test-controller', Yii::$app);
+        $controller->layout = 'main.tpl';
+        $view = Yii::$app->view;
+        $expected = Yii::getAlias(Yii::$app->layoutPath) . DIRECTORY_SEPARATOR . 'main.tpl';
+
+        $actual = $controller->findLayoutFile($view);
+
+        $this->assertEquals($expected, $actual);
+    }
+
     public function testFindLayoutViewExtensionPHP5AndFileNotExists()
     {
         Yii::$app->view->defaultExtension = 'php5';
