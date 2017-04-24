@@ -509,7 +509,7 @@ class Controller extends Component implements ViewContextInterface
     }
 
     /**
-     * Finds the modules layout.
+     * Finds the modules layout name.
      * @return array
      */
     private function findLayoutInModule(Module $module)
